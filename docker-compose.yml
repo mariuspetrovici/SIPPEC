@@ -1,0 +1,59 @@
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: sippec_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+
+  create_db:
+    image: postgres:latest
+    depends_on:
+      - db
+    volumes:
+      - ./backend:/app
+    working_dir: /app
+    command: >
+      sh -c "while ! pg_isready -h db -U postgres; do sleep 1; done &&
+             python create_db.py"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+
+  backend:
+    build: ./backend
+    depends_on:
+      - db
+      - create_db
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./backend:/app
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_HOST: db
+      POSTGRES_PORT: 5432
+      POSTGRES_DB: sippec_db
+
+  frontend:
+    build: ./frontend
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./frontend:/app
+    working_dir: /app
+    environment:
+      NODE_ENV: development
+    command: npm start
+    depends_on:
+      - backend
+
+volumes:
+  postgres_data:
