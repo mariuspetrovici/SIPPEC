@@ -1,3 +1,9 @@
+version: '3.8'
+
+networks:
+  app-network:
+    driver: bridge
+
 services:
   db:
     image: postgres:latest
@@ -37,6 +43,8 @@ services:
   backend:
     build: ./backend
     depends_on:
+      db:
+        condition: service_healthy
       create_db:
         condition: service_completed_successfully
     ports:
